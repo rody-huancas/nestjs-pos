@@ -11,4 +11,6 @@ export const typeOrmConfig = async (configService: ConfigService): Promise<TypeO
 
   // ssl: true,
   // logging: true,
+  entities: [__dirname + '/../**/*.entity.{js,ts}'],
+  synchronize: true,
 });
