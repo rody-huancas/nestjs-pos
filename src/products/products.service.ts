@@ -3,8 +3,9 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './entities/product.entity';
-import { Repository } from 'typeorm';
+import { FindManyOptions, Repository } from 'typeorm';
 import { Category } from 'src/categories/entities/category.entity';
+import { GetProductsQueryDto } from './dto/get-product.dto';
 
 @Injectable()
 export class ProductsService {
@@ -22,14 +23,32 @@ export class ProductsService {
       throw new NotFoundException(errors);
     }
 
-    return this.productRepository.save({
-      ...createProductDto,
-      category: category
-    });
+    return this.productRepository.save({ ...createProductDto, category });
   }
 
-  findAll() {
-    return `This action returns all products`;
+  async findAll(categoryId: number | null, take: number, skip: number) {
+    const options: FindManyOptions<Product> = {
+      relations: {
+        category: true
+      },
+      order: {
+        id: 'DESC'
+      },
+      take,
+      skip
+    }
+
+    if (categoryId) {
+      options.where = {
+        category: {
+          id: categoryId
+        }
+      }
+    }
+
+    const [ products, total ] = await this.productRepository.findAndCount(options);
+
+    return { products, total }
   }
 
   findOne(id: number) {
