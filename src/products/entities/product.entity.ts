@@ -20,4 +20,7 @@ export class Product {
 
   @ManyToOne(() => Category)
   category: Category;
+
+  @Column({ type: "int" })
+  categoryId: number;
 }

@@ -51,15 +51,45 @@ export class ProductsService {
     return { products, total }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} product`;
+  async findOne(id: number) {
+    const product = await this.productRepository.findOne({
+      where: {
+        id
+      },
+      relations: {
+        category: true
+      }
+    });
+
+    if (!product) {
+      throw new NotFoundException(`El Producto con el ID: ${id}, no existe`);
+    }
+
+    return product;
   }
 
-  update(id: number, updateProductDto: UpdateProductDto) {
-    return `This action updates a #${id} product`;
+  async update(id: number, updateProductDto: UpdateProductDto) {
+    const product = await this.findOne(id);
+    Object.assign(product, updateProductDto);
+
+    if (updateProductDto.categoryId) {
+      const category = await this.categoryRepository.findOneBy({ id: updateProductDto.categoryId });
+
+      if (!category) {
+        let errors: string[] = [];
+        errors.push("La categoría no existe");
+        throw new NotFoundException(errors);
+      }
+
+      product.category = category;
+    }
+
+    return await this.productRepository.save(product);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} product`;
+  async remove(id: number) {
+    const product = await this.findOne(id);
+    this.productRepository.remove(product);
+    return 'Producto Eliminado';
   }
 }
