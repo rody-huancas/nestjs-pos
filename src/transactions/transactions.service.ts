@@ -1,11 +1,12 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateTransactionDto } from './dto/create-transaction.dto';
-import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Transaction, TransactionContents } from './entities/transaction.entity';
 import { Between, FindManyOptions, Repository } from 'typeorm';
-import { Product } from 'src/products/entities/product.entity';
 import { endOfDay, isValid, parseISO, startOfDay } from 'date-fns';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+
+import { Product } from 'src/products/entities/product.entity';
+import { CouponsService } from 'src/coupons/coupons.service';
+import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { Transaction, TransactionContents } from './entities/transaction.entity';
 
 @Injectable()
 export class TransactionsService {
@@ -13,13 +14,24 @@ export class TransactionsService {
     @InjectRepository(Transaction) private readonly transactionRepository: Repository<Transaction>,
     @InjectRepository(TransactionContents) private readonly transactionContentsRepository: Repository<TransactionContents>,
     @InjectRepository(Product) private readonly productRepository: Repository<Product>,
+    private readonly couponService: CouponsService,
   ) {}
 
   async create(createTransactionDto: CreateTransactionDto) {
     await this.productRepository.manager.transaction(async (transactionEntityManager) => {
       const transaction = new Transaction();
-      transaction.total = createTransactionDto.contents.reduce((total,item) => total + item.price * item.quantity, 0);
+      const total = createTransactionDto.contents.reduce((total,item) => total + item.price * item.quantity, 0);
+      transaction.total = total;
   
+      if (createTransactionDto.coupon) {
+        const coupon = await this.couponService.applyCoupon(createTransactionDto.coupon);
+
+        const discount = (coupon.percentage / 100) * total;
+        transaction.discount =  discount;
+        transaction.coupon   =  coupon.name;
+        transaction.total    -= discount;
+      }
+
       for (const contents of createTransactionDto.contents) {
         const product = await transactionEntityManager.findOneBy(Product, { id: contents.productId });
         
