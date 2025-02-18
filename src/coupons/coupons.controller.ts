@@ -3,7 +3,7 @@ import { CouponsService } from './coupons.service';
 import { ApplyCouponDto } from './dto/apply-coupon.dto';
 import { CreateCouponDto } from './dto/create-coupon.dto';
 import { UpdateCouponDto } from './dto/update-coupon.dto';
-import { IdValidationPipe } from 'src/common/pipes/id-validation/id-validation.pipe';
+import { IdValidationPipe } from '../common/pipes/id-validation/id-validation.pipe';
 
 @Controller('coupons')
 export class CouponsController {
